@@ -42,7 +42,7 @@ const BrakeMap: React.FC<BrakeMapProps> = ({ message }) => {
       <MapContainer
         center={center}
         zoom={19}
-        style={{ height: "80vh" }}
+        style={{ height: "80vh", zIndex: "1" }}
         key={center.toString()} // agar map update saat center berubah
       >
         <TileLayer

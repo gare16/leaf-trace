@@ -25,8 +25,8 @@ export const MQTTProvider = ({ children }: { children: React.ReactNode }) => {
   const clientRef = useRef<mqtt.MqttClient | null>(null);
 
   useEffect(() => {
-    const client = mqtt.connect("ws://20.66.101.230:8083/mqtt");
-    const topic = "dian/gps";
+    const client = mqtt.connect(process.env.NEXT_PUBLIC_MQTT_WS!);
+    const topic = process.env.NEXT_PUBLIC_TOPIC_MQTT!;
     clientRef.current = client;
 
     client.on("connect", () => {

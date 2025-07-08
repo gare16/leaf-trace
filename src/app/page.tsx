@@ -1,22 +1,11 @@
-import SkeletonCard from "@/components/skeleton-card";
-import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function HomePage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Welcome</h1>
-      <Suspense fallback={<SkeletonCard />}>
-        <Content />
-      </Suspense>
-    </div>
-  );
-}
-
-async function Content() {
-  await new Promise((resolve) => setTimeout(resolve, 1500)); // simulate loading
-  return (
-    <p className="text-gray-700">
-      This is your main content loaded after skeleton.
-    </p>
-  );
+export default async function Page() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  // Validasi jika belum login redirect ke login page
+  if (!token) {
+    redirect("/auth/login");
+  } else redirect("/dashboard");
 }

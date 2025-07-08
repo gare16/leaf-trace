@@ -1,14 +1,20 @@
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+const secret = new TextEncoder().encode(process.env.NEXT_PUBLIC_JWT_SECRET!);
 
 /**
  * Sign a JWT
  * @param payload - Must be key-value pairs (string keys)
  * @param exp - Expiration time (default '1h')
  */
-export async function sign(payload: JWTPayload, exp: string = "1h"): Promise<string> {
-  return await new SignJWT(payload).setProtectedHeader({ alg: "HS256" }).setExpirationTime(exp).sign(secret);
+export async function sign(
+  payload: JWTPayload,
+  exp: string = "1h"
+): Promise<string> {
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime(exp)
+    .sign(secret);
 }
 
 /**
