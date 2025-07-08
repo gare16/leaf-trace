@@ -18,3 +18,12 @@ model gps_data {
   timestamp  DateTime? @db.Timestamp(6)
   is_rem     Int?
 }
+
+model users {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username   String    @unique @db.VarChar(100)
+  password   String
+  name       String?   @db.VarChar(100)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+}
