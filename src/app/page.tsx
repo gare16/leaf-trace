@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  // Validasi jika belum login redirect ke login page
+  // Validasi jika belum login redirect ke login pagew
   if (!token) {
     redirect("/auth/login");
   } else redirect("/dashboard");

@@ -3,36 +3,23 @@
 import "leaflet/dist/leaflet.css";
 import React, { useEffect, useState } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
-import { RawBrakeType } from "@/types/brakes";
-
-type MarkerType = {
-  id: number;
-  lat: number;
-  lng: number;
-};
+import { BrakeType } from "@/types/brakes";
 
 type BrakeMapProps = {
-  message?: RawBrakeType;
+  message?: BrakeType[];
 };
 
 const BrakeMap: React.FC<BrakeMapProps> = ({ message }) => {
-  const [markers, setMarkers] = useState<MarkerType[]>([]);
   const [center, setCenter] = useState<[number, number]>([-6.9, 107.6]);
 
   useEffect(() => {
-    if (message && message.latitude !== null && message.longitude !== null) {
-      const newMarker: MarkerType = {
-        id: message.id!,
-        lat: message.latitude,
-        lng: message.longitude,
-      };
+    if (message && message.length > 0) {
+      const lat = message[0].latitude_1;
+      const lng = message[0].longitude_1;
 
-      setMarkers((prev) => {
-        if (prev.find((m) => m.id === newMarker.id)) return prev;
-        return [...prev, newMarker];
-      });
-
-      setCenter([newMarker.lat, newMarker.lng]);
+      if (lat !== null && lng !== null) {
+        setCenter([lat, lng]);
+      }
     }
   }, [message]);
 
@@ -42,17 +29,17 @@ const BrakeMap: React.FC<BrakeMapProps> = ({ message }) => {
       <MapContainer
         center={center}
         zoom={19}
-        style={{ height: "80vh", zIndex: "1" }}
+        style={{ height: "65vh", zIndex: "1" }}
         key={center.toString()} // agar map update saat center berubah
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
-        {markers.map((marker) => (
+        {message?.map((marker) => (
           <CircleMarker
             key={marker.id}
-            center={[marker.lat, marker.lng]}
+            center={[marker.latitude_1, marker.longitude_1]}
             radius={6}
             pathOptions={{
               color: "white",

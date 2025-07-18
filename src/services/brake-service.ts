@@ -1,14 +1,9 @@
 "use server";
 
-import { getDate } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
-import { BrakeType } from "@/types/brakes";
+import { BrakeType, RawBrakeType } from "@/types/brakes";
 
-export async function getBrakingEvents(
-  limit?: string,
-  date?: string
-): Promise<BrakeType[]> {
-  const queryLimit = limit ?? "";
+export async function getBrakingEvents(date?: string): Promise<BrakeType[]> {
   let queryTimestamp = "";
 
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -19,63 +14,69 @@ export async function getBrakingEvents(
         new Error("Invalid date format. Expected YYYY-MM-DD.")
       );
     }
-    queryTimestamp = `WHERE timestamp::date = '${date}'`;
+    queryTimestamp = `AND timestamp::date = '${date}'`;
   } else {
     queryTimestamp = "";
   }
 
   const query = `
-    WITH flags AS (
-      SELECT
-        *,
-        LAG(is_rem) OVER (ORDER BY timestamp) AS prev_is_rem
-      FROM gps_data
-      ${queryTimestamp}
-    ),
-    starts AS (
-      SELECT
-        id,
-        timestamp AS start_braking
-      FROM flags
-      WHERE is_rem = 1 AND (prev_is_rem = 0 OR prev_is_rem IS NULL)
-      ${queryLimit}
-    ),
-    stops AS (
-      SELECT
-        id,
-        timestamp AS stop_braking
-      FROM flags
-      WHERE is_rem = 0 AND prev_is_rem = 1
-      ${queryLimit}
-    ),
-    pairs AS (
-      SELECT
-        s.start_braking,
-        t.stop_braking,
-        EXTRACT(EPOCH FROM t.stop_braking - s.start_braking) AS duration_braking
-      FROM starts s
-      JOIN stops t ON t.stop_braking > s.start_braking
-      WHERE NOT EXISTS (
-        SELECT 1 FROM starts s2
-        WHERE s2.start_braking > s.start_braking
-          AND s2.start_braking < t.stop_braking
-      )
-    )
-    SELECT
-      p.start_braking,
-      p.stop_braking,
-      p.duration_braking,
-      (SELECT AVG(speed) FROM gps_data WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) AS speed,
-      (SELECT MAX(altitude) - MIN(altitude)
-      FROM gps_data
-      WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) AS distance,
-      CASE
-        WHEN (SELECT MAX(altitude) - MIN(altitude) FROM gps_data WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) >= 5 THEN 'uphill'
-        WHEN (SELECT MIN(altitude) - MAX(altitude) FROM gps_data WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) >= 5 THEN 'downhill'
-        ELSE 'flat'
-      END AS category
-    FROM pairs p
-    ORDER BY p.start_braking DESC;
+WITH rem_events AS (
+	  SELECT
+	    id,
+		latitude AS latitude_1,
+		longitude AS longitude_1,
+	    speed AS speed_1,
+	    altitude AS altitude_1,
+	    "timestamp" AS time_1,
+		LEAD(latitude) OVER (ORDER BY "timestamp") AS latitude_2,
+		LEAD(longitude) OVER (ORDER BY "timestamp") AS longitude_2,
+	    LEAD(speed) OVER (ORDER BY "timestamp") AS speed_2,
+	    LEAD(altitude) OVER (ORDER BY "timestamp") AS altitude_2,
+	    LEAD("timestamp") OVER (ORDER BY "timestamp") AS time_2
+	  FROM gps_data
+	  WHERE is_rem = 1
+    ${queryTimestamp}
+	),
+	processed AS (
+	  SELECT
+	    id,
+		latitude_1,
+		latitude_2,
+		longitude_1,
+		longitude_2,
+	    speed_1,
+	    speed_2,
+	    altitude_1,
+	    altitude_2,
+	    time_1,
+	    time_2,
+		EXTRACT(EPOCH FROM (time_2 - time_1)) AS duration_brake,
+    	(speed_1 - speed_2) AS delta_speed,
+	    (speed_1 - speed_2) / NULLIF(EXTRACT(EPOCH FROM (time_2 - time_1)), 0) AS deceleration,
+	    (altitude_2 - altitude_1) AS delta_altitude,
+	    CASE
+	      WHEN (altitude_2 - altitude_1) > 1 THEN 'Menanjak'
+	      WHEN (altitude_2 - altitude_1) < -1 THEN 'Menurun'
+	      ELSE 'Mendatar'
+	    END AS road_condition
+	  FROM rem_events
+	  WHERE speed_2 IS NOT NULL AND time_2 IS NOT NULL
+	),
+	categorized AS (
+	  SELECT
+	    *,
+	    CASE
+	      WHEN deceleration IS NULL OR deceleration < 0 THEN 'Hijau'
+	      WHEN deceleration <= 2 THEN 'Hijau'
+	      WHEN deceleration <= 4 THEN 'Kuning'
+	      ELSE 'Merah'
+	    END AS category_brake
+	  FROM processed
+	)
+	
+	SELECT *
+	FROM categorized
+	ORDER BY time_1;
   `;
 
   try {
@@ -85,7 +86,15 @@ export async function getBrakingEvents(
       const transformedItem = {
         ...Object.fromEntries(
           Object.entries(item).map(([key, value]) => {
-            if (["speed", "distance", "duration_braking"].includes(key)) {
+            if (
+              [
+                "speed_1",
+                "speed_2",
+                "altitude",
+                "duration_brake",
+                "deceleration",
+              ].includes(key)
+            ) {
               return [key, Number(value)];
             }
             return [key, value];
@@ -103,21 +112,22 @@ export async function getBrakingEvents(
   }
 }
 
-export async function getBrakingDate() {
-  const { start, end } = getDate();
-  const result = await prisma.gps_data.findMany({
-    where: {
-      timestamp: {
-        gte: start,
-        lt: end,
-      },
-    },
-    orderBy: {
-      timestamp: "asc",
-    },
-  });
+export async function getRawData(date?: string): Promise<RawBrakeType[]> {
+  if (!date) {
+    throw new Error("Date is required");
+  }
 
-  return result;
+  try {
+    const result = await prisma.$queryRaw<RawBrakeType[]>`
+      SELECT id, latitude, longitude
+      FROM gps_data
+      WHERE timestamp::date = ${date}
+    `;
+    return result;
+  } catch (error) {
+    console.error("Error fetching raw data:", error);
+    throw error;
+  }
 }
 
 export async function getUniqueDates() {
@@ -135,14 +145,4 @@ export async function getUniqueDates() {
   );
 
   return dates;
-}
-
-export async function getBrakingLatest() {
-  const result = await prisma.gps_data.findFirst({
-    orderBy: {
-      timestamp: "desc",
-    },
-  });
-  console.log("fetching to getBrakingLatest!");
-  return result;
 }

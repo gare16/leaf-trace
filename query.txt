@@ -1,0 +1,53 @@
+  const query = `
+    WITH flags AS (
+      SELECT
+        *,
+        LAG(is_rem) OVER (ORDER BY timestamp) AS prev_is_rem
+      FROM gps_data
+      ${queryTimestamp}
+    ),
+    starts AS (
+      SELECT
+        id,
+        timestamp AS start_braking
+      FROM flags
+      WHERE is_rem = 1 AND (prev_is_rem = 0 OR prev_is_rem IS NULL)
+      ${queryLimit}
+    ),
+    stops AS (
+      SELECT
+        id,
+        timestamp AS stop_braking
+      FROM flags
+      WHERE is_rem = 0 AND prev_is_rem = 1
+      ${queryLimit}
+    ),
+    pairs AS (
+      SELECT
+        s.start_braking,
+        t.stop_braking,
+        EXTRACT(EPOCH FROM t.stop_braking - s.start_braking) AS duration_braking
+      FROM starts s
+      JOIN stops t ON t.stop_braking > s.start_braking
+      WHERE NOT EXISTS (
+        SELECT 1 FROM starts s2
+        WHERE s2.start_braking > s.start_braking
+          AND s2.start_braking < t.stop_braking
+      )
+    )
+    SELECT
+      p.start_braking,
+      p.stop_braking,
+      p.duration_braking,
+      (SELECT AVG(speed) FROM gps_data WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) AS speed,
+      (SELECT MAX(altitude) - MIN(altitude)
+      FROM gps_data
+      WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) AS distance,
+      CASE
+        WHEN (SELECT MAX(altitude) - MIN(altitude) FROM gps_data WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) >= 5 THEN 'uphill'
+        WHEN (SELECT MIN(altitude) - MAX(altitude) FROM gps_data WHERE timestamp BETWEEN p.start_braking AND p.stop_braking AND is_rem = 1) >= 5 THEN 'downhill'
+        ELSE 'flat'
+      END AS category
+    FROM pairs p
+    ORDER BY p.start_braking DESC;
+  `;

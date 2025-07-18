@@ -16,7 +16,7 @@ export default async function SlugHistoryPage({
   let error = "";
 
   try {
-    data = await getBrakingEvents("", slug);
+    data = await getBrakingEvents(slug);
   } catch (e) {
     if (e instanceof Error) {
       error = e.message;

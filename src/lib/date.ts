@@ -4,8 +4,9 @@ export function getDate() {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
+  const date = now.toISOString().split("T")[0];
 
-  return { start, end };
+  return { start, end, date };
 }
 
 export function formatDate(value: Date | string): string {
