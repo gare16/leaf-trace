@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
 const data = {
   user: {
@@ -41,8 +43,31 @@ const data = {
   ],
 };
 
+interface MyJwtPayload {
+  userId: string;
+  username: string;
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const path = usePathname();
+  const [name, setName] = React.useState("");
+
+  React.useEffect(() => {
+    const token = Cookies.get("token");
+
+    if (!token) {
+      console.warn("Token not found in cookie");
+      return;
+    }
+
+    try {
+      const decodedToken = jwtDecode<MyJwtPayload>(token);
+      console.log("Token from cookie:", token);
+      setName(decodedToken.username);
+    } catch (err) {
+      console.error("Failed to decode token:", err);
+    }
+  }, []);
 
   if (path.startsWith("/auth")) {
     return null;
@@ -68,7 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser name={name} />
       </SidebarFooter>
     </Sidebar>
   );

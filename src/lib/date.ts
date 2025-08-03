@@ -1,10 +1,23 @@
 // function untuk mendapatkan timestamp hari ini
 export function getDate() {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const fullDate = now.toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour12: false,
+  });
+
+  // fullDate format: "4/8/2025, 00.39.18"
+  const dateParts = fullDate.split(",")[0].split("/"); // ["4", "8", "2025"]
+
+  const date = `${dateParts[2]}-${dateParts[1].padStart(
+    2,
+    "0"
+  )}-${dateParts[0].padStart(2, "0")}`;
+
+  const start = new Date(+dateParts[2], +dateParts[1] - 1, +dateParts[0]);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
-  const date = now.toISOString().split("T")[0];
 
   return { start, end, date };
 }

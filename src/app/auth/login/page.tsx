@@ -142,16 +142,6 @@ export default function LoginPage() {
                   )}
                 />
 
-                <div className="flex items-center justify-between text-sm">
-                  <div></div>
-                  <a
-                    href="#"
-                    className="text-blue-600 hover:text-blue-500 font-medium"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
-
                 <h1 className="text-red-500">{status}</h1>
 
                 <Button
