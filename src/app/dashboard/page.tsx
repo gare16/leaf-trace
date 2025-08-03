@@ -1,15 +1,14 @@
-import { getDate } from "@/lib/date";
-import { MQTTProvider } from "../context/mqtt-context";
-import { getBrakingEvents } from "@/services/brake-service";
+// import { getDate } from "@/lib/date";
 import DashboardClient from "@/components/dashboard-client";
+import { MQTTProvider } from "../../context/mqtt-context";
+import { getData } from "@/services/brake-service";
 
 export default async function DashboardPage() {
-  const { date } = getDate();
-  const existed = "2025-07-17";
-  const data = await getBrakingEvents(existed);
+  // const { date } = getDate();
+  const dataSpesific = await getData("2025-08-01");
   return (
     <MQTTProvider>
-      <DashboardClient messages={data} />
+      <DashboardClient messages={dataSpesific} />
     </MQTTProvider>
   );
 }
