@@ -5,10 +5,15 @@ const PUBLIC_PATHS = ["/auth/login", "/auth/register"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
-  if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
-
   const token = req.cookies.get("token")?.value;
+
+  if (PUBLIC_PATHS.includes(pathname)) {
+    if (token && (await verify(token))) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+    return NextResponse.next();
+  }
+
   if (!token || !(await verify(token))) {
     const loginUrl = new URL("/auth/login", req.url);
     loginUrl.searchParams.set("redirect", pathname);

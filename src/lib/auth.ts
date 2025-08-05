@@ -69,7 +69,7 @@ export async function login(username: string, password: string) {
   });
 
   // Optional: Do not return password hash in response
-  redirect("/dashboard");
+  return "success";
 }
 
 export async function logout() {
