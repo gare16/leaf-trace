@@ -1,7 +1,6 @@
 "use client";
 
 import { BrakeSchema } from "@/types/brakes";
-import BrakeMap from "./brake-map";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +9,11 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
+import dynamic from "next/dynamic";
+
+const BrakeMap = dynamic(() => import("@/components/brake-map"), {
+  ssr: false,
+});
 
 export function ModalMap({ data }: { data: BrakeSchema[] }) {
   return (

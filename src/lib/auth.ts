@@ -12,12 +12,13 @@ export async function register(
   password: string,
   name?: string
 ) {
-  if (!username || !password) {
+  if (!username?.trim() || !password?.trim()) {
     throw new Error("Username and password are required");
   }
 
   try {
     const hashedPassword = await hash(password, 10);
+
     const user = await prisma.users.create({
       data: {
         username,
@@ -26,15 +27,17 @@ export async function register(
       },
     });
 
-    const { password: _, ...safeUser } = user;
-    return safeUser;
+    return `Account ${user.name} has been created.`;
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        throw new Error("Username already exists");
-      }
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new Error("Username already exists");
     }
-    throw error; // rethrow other unexpected errors
+
+    // Optionally log error here
+    throw new Error("Registration failed");
   }
 }
 

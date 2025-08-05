@@ -8,11 +8,11 @@ import React, {
   useState,
 } from "react";
 import mqtt from "mqtt";
-import { RawBrakeType } from "@/types/brakes";
+import { BrakeSchema } from "@/types/brakes";
 
 type MQTTContextType = {
   client: mqtt.MqttClient | null;
-  messages: RawBrakeType | undefined;
+  messages: BrakeSchema | undefined;
 };
 
 const MQTTContext = createContext<MQTTContextType>({
@@ -21,7 +21,7 @@ const MQTTContext = createContext<MQTTContextType>({
 });
 
 export const MQTTProvider = ({ children }: { children: React.ReactNode }) => {
-  const [messages, setMessages] = useState<RawBrakeType>();
+  const [messages, setMessages] = useState<BrakeSchema>();
   const clientRef = useRef<mqtt.MqttClient | null>(null);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export const MQTTProvider = ({ children }: { children: React.ReactNode }) => {
 
     client.on("message", (_topic, message) => {
       try {
-        const parsed: RawBrakeType = JSON.parse(message.toString());
+        const parsed: BrakeSchema = JSON.parse(message.toString());
         setMessages(parsed);
       } catch (error) {
         console.error("❌ Invalid message:", error);

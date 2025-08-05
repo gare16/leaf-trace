@@ -62,7 +62,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     try {
       const decodedToken = jwtDecode<MyJwtPayload>(token);
-      console.log("Token from cookie:", token);
       setName(decodedToken.username);
     } catch (err) {
       console.error("Failed to decode token:", err);
