@@ -3,20 +3,30 @@
 import { prisma } from "@/lib/prisma";
 import { BrakeSchema } from "@/types/brakes";
 
-export async function getData(date?: string): Promise<BrakeSchema[]> {
+export async function getData(date: string): Promise<BrakeSchema[]> {
   if (!date) {
     throw new Error("Date is required");
   }
 
+  const start = new Date(date);
+  const end = new Date(date);
+  end.setDate(end.getDate() + 1);
+
   try {
-    const result = await prisma.$queryRaw<BrakeSchema[]>`
-  SELECT *
-  FROM gps_data
-  WHERE timestamp::date = ${date}::date
-`;
+    const result = await prisma.gps_data.findMany({
+      where: {
+        timestamp: {
+          gte: start,
+          lt: end,
+        },
+      },
+      orderBy: {
+        timestamp: "desc",
+      },
+    });
     return result;
   } catch (error) {
-    console.error("Error fetching raw data:", error);
+    console.error("Error fetching data:", error);
     throw error;
   }
 }
@@ -25,6 +35,9 @@ export async function getUniqueDates() {
   const data = await prisma.gps_data.findMany({
     select: {
       timestamp: true,
+    },
+    orderBy: {
+      timestamp: "desc",
     },
   });
 

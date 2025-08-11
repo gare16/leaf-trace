@@ -4,7 +4,7 @@ export const DataSchema = z.object({
   id: z.number(),
   latitude: z.number(),
   longitude: z.number(),
-  road_condition: z.enum(["Datar", "Menanjak", "Menurun"]),
+  road_condition: z.enum(["Mendatar", "Menanjak", "Menurun"]),
   brake_duration_ms: z.number().int().nonnegative(),
   start_speed_kmph: z.number().nonnegative(),
   end_speed_kmph: z.number().nonnegative(),

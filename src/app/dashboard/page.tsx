@@ -9,7 +9,6 @@ export default async function DashboardPage() {
   return (
     <MQTTProvider>
       <DashboardClient messages={dataSpesific} />
-      <></>
     </MQTTProvider>
   );
 }
