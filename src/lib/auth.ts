@@ -61,7 +61,7 @@ export async function login(username: string, password: string) {
   // Set token in secure cookie
   const cookieStore = cookies();
   (await cookieStore).set("token", token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     maxAge: 60 * 60 * 24 * 7, // 7 days
